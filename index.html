@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<!-- 结构：本文件 <body> 里的标签树，决定页面上有什么、谁套在谁里面 -->
+<!-- 样式：全部在 css/style.css，靠 <head> 里的 <link> 引入，决定长什么样、怎么排列 -->
+<!-- 脚本：底部按顺序引入 js/ 下 8 个文件（storage.js 最早、app.js 最后）；入口是 js/app.js，负责启动、导航和看板刷新 -->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人学习生活工作台</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">个人学习生活工作台</div>
+      <nav class="nav">
+        <button type="button" class="nav-item is-active" data-module="dashboard" data-view="board">今日看板</button>
+        <button type="button" class="nav-item" data-module="todo" data-view="todo">待办</button>
+        <button type="button" class="nav-item" data-module="notes" data-view="note">快速笔记</button>
+        <button type="button" class="nav-item" data-module="ledger" data-view="ledger">记账</button>
+        <button type="button" class="nav-item" data-module="links" data-view="links">快捷入口</button>
+        <button type="button" class="nav-item" data-module="habits" data-view="checkin">打卡</button>
+        <button type="button" class="nav-item" data-module="pomo" data-view="pomo">专注</button>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <!-- 今日看板 -->
+      <section class="view is-active" id="view-board">
+        <header class="hero">
+          <div class="hero-date">
+            <span class="day-big" id="dayNum">16</span>
+            <span class="day-meta">
+              <span class="month" id="monthText">2026年9月</span>
+              <span class="week" id="weekText">星期三</span>
+            </span>
+          </div>
+          <div class="greeting" id="greeting">晚上好</div>
+        </header>
+
+        <div class="summary">
+          <div class="card">
+            <div class="card-title">待办进度</div>
+            <div class="card-num"><span class="num" id="statTodoDone">0</span><span class="num-sub">/ <span id="statTodoTotal">0</span></span></div>
+            <div class="bar"><span class="bar-fill" id="statTodoBar" style="width:0%"></span></div>
+            <div class="card-foot" id="statTodoFoot">今天还没有待办</div>
+          </div>
+          <div class="card">
+            <div class="card-title">今日收支</div>
+            <div class="card-num money"><span class="num" id="statLedgerNet">0.00</span></div>
+            <div class="bar"><span class="bar-fill is-out" id="statLedgerBar" style="width:0%"></span></div>
+            <div class="card-foot money" id="statLedgerFoot">收入 0.00 · 支出 0.00</div>
+          </div>
+          <div class="card">
+            <div class="card-title">打卡达标</div>
+            <div class="card-num"><span class="num" id="statHabitDone">0</span><span class="num-sub">/ 4</span></div>
+            <div class="bar"><span class="bar-fill" id="statHabitBar" style="width:0%"></span></div>
+            <div class="card-foot" id="statHabitFoot">今天还没有达标项</div>
+          </div>
+        </div>
+
+        <div class="panels">
+          <div class="panel">
+            <div class="panel-head">本日待办</div>
+            <ul class="todo-list" id="boardTodoList"></ul>
+            <p class="placeholder" id="boardTodoEmpty">今天还没有待办</p>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">打卡一览</div>
+            <ul class="checkin-list" id="boardHabitList"></ul>
+            <p class="placeholder" id="boardHabitEmpty">今天还没有打卡</p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- 待办 -->
+      <section class="view" id="view-todo">
+        <h1 class="page-title">待办</h1>
+
+        <div class="todo-add">
+          <input type="text" id="todoInput" class="todo-input" maxlength="80" placeholder="添加一条待办，回车或点添加">
+          <select id="todoBucket" class="todo-select">
+            <option value="today">本日</option>
+            <option value="week">本周</option>
+            <option value="month">本月</option>
+          </select>
+          <button type="button" class="todo-btn" id="todoAdd">添加</button>
+        </div>
+
+        <div class="todo-tabs" id="todoTabs">
+          <button type="button" class="todo-tab is-active" data-bucket="today">本日</button>
+          <button type="button" class="todo-tab" data-bucket="week">本周</button>
+          <button type="button" class="todo-tab" data-bucket="month">本月</button>
+        </div>
+
+        <div class="todo-body">
+          <div class="todo-pane">
+            <div class="panel-head">列表</div>
+            <ul class="todo-list" id="todoList"></ul>
+            <p class="placeholder" id="todoEmpty">还没有待办，添加后会出现在这里</p>
+          </div>
+
+          <div class="todo-pane">
+            <div class="panel-head">详情</div>
+            <p class="placeholder" id="todoDetailEmpty">选中左边一条待办，在这里编辑</p>
+            <div id="todoDetail" hidden>
+              <div class="detail-row">
+                <label class="detail-label" for="detailText">内容</label>
+                <input type="text" id="detailText" class="todo-input" maxlength="80">
+                <button type="button" class="todo-btn" id="detailSave">保存</button>
+              </div>
+              <div class="detail-row">
+                <label class="detail-check">
+                  <input type="checkbox" id="detailDone"> 标记完成
+                </label>
+              </div>
+              <div class="detail-row">
+                <label class="detail-label" for="detailBucket">所属 Tab</label>
+                <select id="detailBucket" class="todo-select">
+                  <option value="today">本日</option>
+                  <option value="week">本周</option>
+                  <option value="month">本月</option>
+                </select>
+              </div>
+              <div class="detail-row">
+                <label class="detail-label" for="detailDeadline">截止日期（选填）</label>
+                <input type="date" id="detailDeadline" class="todo-input">
+                <button type="button" class="todo-btn" id="detailClearDeadline">清除</button>
+                <span class="detail-hint" id="detailDeadlineHint"></span>
+              </div>
+              <div class="detail-row">
+                <label class="detail-label" for="detailNote">关联笔记</label>
+                <select id="detailNote" class="todo-select"></select>
+                <button type="button" class="todo-btn" id="detailGotoNote">跳转</button>
+                <span class="detail-hint" id="detailNoteHint"></span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">创建时间</span>
+                <span class="detail-value money" id="detailCreatedAt"></span>
+              </div>
+              <div class="detail-row">
+                <button type="button" class="todo-btn is-danger" id="detailDelete">删除这条</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 快速笔记 -->
+      <section class="view" id="view-note">
+        <h1 class="page-title">快速笔记</h1>
+
+        <div class="todo-body">
+          <div class="todo-pane">
+            <div class="panel-head">列表</div>
+            <ul class="note-list" id="noteList"></ul>
+            <p class="placeholder" id="noteEmpty">还没有笔记，写完提交后会出现在这里</p>
+          </div>
+
+          <div class="todo-pane">
+            <div class="panel-head" id="notePaneHead">写一条</div>
+
+            <div id="noteForm">
+              <div class="detail-row">
+                <label class="detail-label" for="noteCause">起因（选填）</label>
+                <input type="text" id="noteCause" class="todo-input" maxlength="40" placeholder="为什么记这一条">
+              </div>
+              <div class="detail-row">
+                <label class="detail-label" for="noteBody">内容（必填）</label>
+                <textarea id="noteBody" class="note-textarea" rows="7" maxlength="500" placeholder="写完点「提交」才会保存"></textarea>
+              </div>
+              <div class="detail-row">
+                <button type="button" class="todo-btn" id="noteSubmit">提交</button>
+                <span class="detail-hint" id="noteHint"></span>
+              </div>
+            </div>
+
+            <div id="noteDetail" hidden>
+              <div class="detail-row">
+                <span class="detail-label">起因</span>
+                <div class="note-view" id="viewCause"></div>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">内容</span>
+                <div class="note-view" id="viewBody"></div>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">提交时间</span>
+                <span class="detail-value money" id="viewTime"></span>
+              </div>
+              <div class="detail-row">
+                <button type="button" class="todo-btn" id="noteBack">再写一条</button>
+                <button type="button" class="todo-btn is-danger" id="noteDelete">删除这条</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 记账 -->
+      <section class="view" id="view-ledger">
+        <h1 class="page-title">记账</h1>
+
+        <div class="ledger-summary" id="ledgerSummary"></div>
+
+        <div class="todo-body">
+          <div class="todo-pane">
+            <div class="panel-head">列表</div>
+            <ul class="ledger-list" id="ledgerList"></ul>
+            <p class="placeholder" id="ledgerEmpty">还没有账目，记一笔后会出现在这里</p>
+          </div>
+
+          <div class="todo-pane">
+            <div class="panel-head">记一笔</div>
+            <div class="detail-row">
+              <label class="detail-label" for="ledgerType">类型</label>
+              <select id="ledgerType" class="todo-select">
+                <option value="out">支出</option>
+                <option value="in">收入</option>
+              </select>
+            </div>
+            <div class="detail-row">
+              <label class="detail-label" for="ledgerAmount">金额（元）</label>
+              <input type="text" id="ledgerAmount" class="todo-input" inputmode="decimal" placeholder="例如 12.50">
+            </div>
+            <div class="detail-row">
+              <label class="detail-label" for="ledgerCategory">分类（必填）</label>
+              <select id="ledgerCategory" class="todo-select"></select>
+            </div>
+            <div class="detail-row">
+              <label class="detail-label" for="ledgerNote">备注（选填）</label>
+              <input type="text" id="ledgerNote" class="todo-input" maxlength="40">
+            </div>
+            <div class="detail-row">
+              <button type="button" class="todo-btn" id="ledgerAdd">保存</button>
+              <span class="detail-hint" id="ledgerHint"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ocr-box">
+          <div class="panel-head">从截图识别</div>
+          <p class="ocr-tip">识别可能不准，以确认卡为准；识别模型需要从 CDN 下载（首次较慢）。</p>
+          <div class="ocr-actions">
+            <input type="file" id="ocrFile" class="ocr-file" accept="image/jpeg,image/png,image/webp">
+            <span class="ocr-tip">也可以先点一下本页，再按 Cmd / Ctrl + V 粘贴截图</span>
+          </div>
+          <div class="ocr-status" id="ocrStatus"></div>
+
+          <div class="ocr-card" id="ocrCard" hidden>
+            <div class="ocr-card-title">确认卡 · 核对后才能入账</div>
+            <div class="detail-row">
+              <label class="detail-label" for="ocrType">类型</label>
+              <select id="ocrType" class="todo-select">
+                <option value="out">支出</option>
+                <option value="in">收入</option>
+              </select>
+            </div>
+            <div class="detail-row">
+              <label class="detail-label" for="ocrAmount">金额（元）</label>
+              <input type="text" id="ocrAmount" class="todo-input" inputmode="decimal">
+            </div>
+            <div class="detail-row">
+              <label class="detail-label" for="ocrCategory">分类</label>
+              <select id="ocrCategory" class="todo-select"></select>
+            </div>
+            <div class="detail-row">
+              <label class="detail-label" for="ocrNote">备注</label>
+              <input type="text" id="ocrNote" class="todo-input" maxlength="40">
+            </div>
+            <div class="detail-row">
+              <span class="detail-hint" id="ocrHint"></span>
+              <span class="ocr-candidates" id="ocrCandidates"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">识别原文（前 200 字）</span>
+              <div class="ocr-raw" id="ocrRaw"></div>
+            </div>
+            <div class="detail-row">
+              <button type="button" class="todo-btn" id="ocrConfirmBtn">确认入账</button>
+              <button type="button" class="todo-btn" id="ocrCancelBtn">取消</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 快捷入口 -->
+      <section class="view" id="view-links">
+        <h1 class="page-title">快捷入口</h1>
+
+        <div class="links-tabs" id="linksTabs">
+          <button type="button" class="links-tab is-active" data-kind="site">常用网站</button>
+          <button type="button" class="links-tab" data-kind="text">常用文本</button>
+        </div>
+
+        <!-- 常用网站 -->
+        <div class="links-pane" id="linksPaneSite">
+          <div class="todo-body">
+            <div class="todo-pane">
+              <div class="panel-head">列表</div>
+              <ul class="link-list" id="siteList"></ul>
+              <p class="placeholder" id="siteEmpty">还没有常用网站，添加后会出现在这里</p>
+            </div>
+            <div class="todo-pane">
+              <div class="panel-head">添加一个</div>
+              <div class="detail-row">
+                <label class="detail-label" for="siteName">名称</label>
+                <input type="text" id="siteName" class="todo-input" maxlength="40" placeholder="比如 公司邮箱">
+              </div>
+              <div class="detail-row">
+                <label class="detail-label" for="siteUrl">网址</label>
+                <input type="text" id="siteUrl" class="todo-input" maxlength="200" placeholder="example.com 或 https://example.com">
+              </div>
+              <div class="detail-row">
+                <button type="button" class="todo-btn" id="siteAdd">添加</button>
+                <span class="detail-hint" id="siteHint"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 常用文本 -->
+        <div class="links-pane" id="linksPaneText" hidden>
+          <div class="todo-body">
+            <div class="todo-pane">
+              <div class="panel-head">列表</div>
+              <ul class="link-list" id="snippetList"></ul>
+              <p class="placeholder" id="snippetEmpty">还没有常用文本，添加后会出现在这里</p>
+            </div>
+            <div class="todo-pane">
+              <div class="panel-head">添加一条</div>
+              <div class="detail-row">
+                <label class="detail-label" for="snippetName">名称</label>
+                <input type="text" id="snippetName" class="todo-input" maxlength="40" placeholder="比如 开票信息">
+              </div>
+              <div class="detail-row">
+                <label class="detail-label" for="snippetText">内容</label>
+                <textarea id="snippetText" class="note-textarea" rows="6" maxlength="500"></textarea>
+              </div>
+              <div class="detail-row">
+                <button type="button" class="todo-btn" id="snippetAdd">添加</button>
+                <span class="detail-hint" id="snippetHint"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 专注（番茄钟） -->
+      <section class="view" id="view-pomo">
+        <h1 class="page-title">专注</h1>
+
+        <div class="todo-body">
+          <div class="todo-pane">
+            <div class="panel-head">当前</div>
+            <div class="pomo-time" id="pomoTime">25:00</div>
+            <div class="pomo-state" id="pomoState">还没开始</div>
+            <div class="pomo-actions">
+              <select id="pomoMinutes" class="todo-select">
+                <option value="25">25 分钟</option>
+                <option value="45">45 分钟</option>
+              </select>
+              <button type="button" class="todo-btn" id="pomoStart">开始</button>
+              <button type="button" class="todo-btn" id="pomoPause" hidden>暂停</button>
+              <button type="button" class="todo-btn is-danger" id="pomoGiveUp" hidden>放弃</button>
+            </div>
+            <p class="ocr-tip">倒计时按开始时刻计算，切到别的页面或刷新都不会归零。</p>
+          </div>
+
+          <div class="todo-pane">
+            <div class="panel-head">今天</div>
+            <div class="ledger-cell-row">
+              <span class="ledger-tag">完成</span>
+              <span class="ledger-num money" id="pomoDoneCount">0</span>
+              <span class="habit-unit">个</span>
+            </div>
+            <div class="ledger-cell-row">
+              <span class="ledger-tag">累计</span>
+              <span class="ledger-num money" id="pomoTotalMin">0</span>
+              <span class="habit-unit">分钟</span>
+            </div>
+            <ul class="pomo-list" id="pomoList"></ul>
+            <p class="placeholder" id="pomoEmpty">今天还没有专注记录，开始一个 25 分钟</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 打卡 -->
+      <section class="view" id="view-checkin">
+        <h1 class="page-title">打卡</h1>
+        <div class="habit-grid" id="habitGrid"></div>
+      </section>
+
+      <footer class="footer">
+        <div class="footer-note">
+          个人学习生活工作台 · 数据保存在本机浏览器<br>
+          今天我们在看前端：你看到的这一页，就是浏览器在跑 HTML/CSS/JS
+        </div>
+
+        <div class="footer-actions">
+          <button type="button" class="footer-btn" id="btnExport">导出 JSON</button>
+          <button type="button" class="footer-btn" id="btnImport">导入 JSON</button>
+          <button type="button" class="footer-btn is-danger" id="btnClear">清空全部数据</button>
+          <input type="file" id="ioFile" class="io-file" accept="application/json,.json" hidden>
+        </div>
+
+        <div class="io-panel" id="ioPanel" hidden>
+          <div class="io-title">导入预览</div>
+          <ul class="io-list" id="ioList"></ul>
+          <div class="io-warn">导入会<span class="is-strong">覆盖现有全部数据</span>，确认后再继续。</div>
+          <div class="io-actions">
+            <button type="button" class="footer-btn" id="ioConfirm">确认覆盖</button>
+            <button type="button" class="footer-btn" id="ioCancel">取消</button>
+          </div>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <!-- 加载顺序：storage.js → 各模块 → app.js（最后，唯一入口） -->
+  <script src="js/storage.js"></script>
+  <script src="js/todo.js"></script>
+  <script src="js/notes.js"></script>
+  <script src="js/links.js"></script>
+  <script src="js/habits.js"></script>
+  <script src="js/ledger.js"></script>
+  <script src="js/ocr.js"></script>
+  <script src="js/pomo.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
